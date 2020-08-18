@@ -1,4 +1,4 @@
-package com.udacity.pricing.service;
+package com.udacity.pricing.exceptions;
 
 public class PriceException extends Exception {
 
