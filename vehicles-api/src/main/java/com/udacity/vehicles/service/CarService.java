@@ -5,18 +5,14 @@ import com.udacity.vehicles.client.prices.PriceClient;
 import com.udacity.vehicles.domain.Location;
 import com.udacity.vehicles.domain.car.Car;
 import com.udacity.vehicles.domain.car.CarRepository;
-
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.stream.Collectors;
-
 import com.udacity.vehicles.domain.manufacturer.Manufacturer;
 import com.udacity.vehicles.domain.manufacturer.ManufacturerRepository;
 import org.springframework.stereotype.Service;
 
-import static com.udacity.vehicles.constants.ApplicationConstants.FAILURE;
-import static com.udacity.vehicles.constants.ApplicationConstants.SUCCESS;
+import java.util.List;
+import java.util.Optional;
+
+import static com.udacity.vehicles.constants.ApplicationConstants.*;
 
 /**
  * Implements the car service create, read, update or delete
@@ -25,6 +21,7 @@ import static com.udacity.vehicles.constants.ApplicationConstants.SUCCESS;
  */
 @Service
 public class CarService {
+
 
     private final CarRepository repository;
     private final MapsClient mapsClient;
@@ -44,18 +41,7 @@ public class CarService {
      * @return a list of all vehicles in the CarRepository
      */
     public List<Car> list() {
-        List<Car> carList = repository.findAll();
-        Map<Long, String> priceMap = priceClient.getAllPrices();
-        List<Location> locationList = carList.stream().map(x -> x.getLocation()).collect(Collectors.toList());
-        Map<String, Location> allAddress = mapsClient.getAllAddress(locationList);
-        for (Car car : carList) {
-            String price = priceMap.containsKey(car.getId()) ? priceMap.get(car.getId()) : "(consult price)";
-            car.setPrice(price);
-            String locKey = car.getLocation().getLat()+":"+car.getLocation().getLon();
-            Location loc = allAddress.containsKey(locKey)?allAddress.get(locKey):car.getLocation();
-            car.setLocation(loc);
-        }
-        return carList;
+        return repository.findAll();
     }
 
     /**
@@ -65,25 +51,17 @@ public class CarService {
      * @return the requested car's information, including location and price
      */
     public Car findById(Long id) {
-        Car result = null;
+        Car result;
         Optional<Car> car = this.repository.findById(id);
         if (car.isPresent()) {
             result = car.get();
         } else {
-            throw new CarNotFoundException("Could not find a car with that Id");
+            throw new CarNotFoundException(CAR_NOT_FOUND);
         }
 
-        /**
-         * Note: The car class file uses @transient, meaning you will need to call
-         *   the pricing service each time to get the price.
-         */
         String carPrice = priceClient.getPrice(result.getId());
         result.setPrice(carPrice);
 
-        /**
-         * Note: The Location class file also uses @transient for the address,
-         * meaning the Maps service needs to be called each time for the address.
-         */
         Location address = mapsClient.getAddress(result.getLocation());
         result.setLocation(address);
 
@@ -123,16 +101,16 @@ public class CarService {
      */
     public String delete(Long id) {
         try {
-            Car result = null;
+            Car result;
             Optional<Car> car = this.repository.findById(id);
             if (car.isPresent()) {
                 result = car.get();
             } else {
-                throw new CarNotFoundException("Could not find a car with that Id");
+                throw new CarNotFoundException(CAR_NOT_FOUND);
             }
             repository.delete(result);
         } catch (CarNotFoundException ex) {
-            throw new CarNotFoundException("Could not find a car with that Id");
+            throw new CarNotFoundException(CAR_NOT_FOUND);
         } catch (Exception ex) {
             return FAILURE;
         }

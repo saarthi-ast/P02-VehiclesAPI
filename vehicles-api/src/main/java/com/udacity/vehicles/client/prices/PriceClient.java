@@ -5,11 +5,6 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 import org.springframework.web.reactive.function.client.WebClient;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-
 /**
  * Implements a class to interface with the Pricing Client for price data.
  */
@@ -40,45 +35,17 @@ public class PriceClient {
             Price price = client
                     .get()
                     .uri(uriBuilder -> uriBuilder
-                            .path("/prices/"+vehicleId)
-                            //.queryParam("vehicleId", vehicleId)
+                            .path("/services/price")
+                            .queryParam("vehicleId", vehicleId)
                             .build()
                     )
                     .retrieve().bodyToMono(Price.class).block();
 
-            return String.format("%s %s", price.getCurrency(), price.getPrice());
+            return String.format("%s %s", (price != null) ? price.getCurrency() : "USD", (price != null) ? price.getPrice() : 0);
 
         } catch (Exception e) {
             log.error("Unexpected error retrieving price for vehicle {}", vehicleId, e);
         }
         return "(consult price)";
-    }
-
-    /**
-     * Gets a vehicle price from the pricing client, given vehicle ID.
-     * @return List of Currency and price of all the vehicles,
-     *   error message that the vehicle ID is invalid, or note that the
-     *   service is down.
-     */
-    public Map<Long,String> getAllPrices() {
-        Map<Long,String> priceMap = new HashMap<>();
-        try {
-            List<Price> prices = client
-                    .get()
-                    .uri(uriBuilder -> uriBuilder
-                            .path("/prices/")
-                            //.queryParam("vehicleId", vehicleId)
-                            .build()
-                    )
-                    .retrieve().bodyToMono(List.class).block();
-            for(Price price: prices){
-                priceMap.putIfAbsent(price.getVehicleId(),String.format("%s %s", price.getCurrency(), price.getPrice()));
-            }
-
-
-        } catch (Exception e) {
-            log.error("Unexpected error retrieving price for all vehicles {}", e);
-        }
-        return priceMap;
     }
 }
