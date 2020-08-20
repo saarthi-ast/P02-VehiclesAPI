@@ -80,6 +80,7 @@ public class CarService {
         if (car.getId() != null && car.getId() > 0) {
             carToSave =  repository.findById(car.getId())
                     .map(carToBeUpdated -> {
+                        carToBeUpdated.setCondition(car.getCondition());
                         carToBeUpdated.setDetails(car.getDetails());
                         carToBeUpdated.setLocation(car.getLocation());
                         return carToBeUpdated;

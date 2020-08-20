@@ -69,8 +69,17 @@ public class PricingService {
      * @return saved Price object
      */
     public Price setNewPrice(Long vehicleId, String currency, Optional<BigDecimal> amount) {
-        Price price = new Price(vehicleId, (currency!=null && currency.trim().length()>0)?currency:"USD", (amount.isPresent())?amount.get():randomPrice());
-        return priceRepository.save(price);
+        Optional<Price> existingPrice = priceRepository.findById(vehicleId);
+        Price priceToUpdate;
+        if (existingPrice.isPresent()) {
+            priceToUpdate = existingPrice.get();
+            priceToUpdate.setCurrency((currency != null && currency.trim().length() > 0) ? currency : "USD");
+            priceToUpdate.setPrice(amount.orElseGet(PricingService::randomPrice));
+        } else {
+            priceToUpdate = new Price(vehicleId, (currency != null && currency.trim().length() > 0) ? currency : "USD", amount.orElseGet(PricingService::randomPrice));
+        }
+
+        return priceRepository.save(priceToUpdate);
     }
 
     /**

@@ -1,5 +1,6 @@
 package com.udacity.vehicles.api;
 
+import com.google.gson.Gson;
 import com.udacity.vehicles.client.maps.MapsClient;
 import com.udacity.vehicles.client.prices.PriceClient;
 import com.udacity.vehicles.domain.Condition;
@@ -124,16 +125,33 @@ public class CarControllerTest {
     @Test
     public void deleteCar() throws Exception {
         Car car = getCar();
-        mvc.perform(delete("/cars/{id}",1L).param("id","1L"))
+        mvc.perform(delete("/cars/{id}", 1L).param("id", "1L"))
                 .andDo(print())
                 .andExpect(status().isOk())
                 .andExpect(MockMvcResultMatchers.jsonPath("$.content").value(SUCCESS));
 
-        verify(carService,times(1)).delete(1L);
+        verify(carService, times(1)).delete(1L);
+    }
+
+    /**
+     * Tests the updation of a single car by ID.
+     *
+     * @throws Exception if the delete operation of a vehicle fails
+     */
+    @Test
+    public void updateCar() throws Exception {
+        Car car = getCar();
+        Gson gson = new Gson();
+        String json = gson.toJson(car);
+        mvc.perform(put("/cars/{id}", 1L).content(json).contentType(MediaType.APPLICATION_JSON_UTF8))
+                .andDo(print())
+                .andExpect(status().isOk())
+                .andExpect(MockMvcResultMatchers.jsonPath("$.id").value(1));
     }
 
     /**
      * Creates an example Car object for use in testing.
+     *
      * @return an example Car object
      */
     private Car getCar() {
