@@ -9,6 +9,7 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.stream.Collectors;
 import java.util.stream.LongStream;
@@ -19,6 +20,8 @@ import java.util.stream.LongStream;
 @Service
 public class PricingService {
 
+    private static final String FAILURE = "Failure";
+    private static final String SUCCESS = "Success";
     private PriceRepository priceRepository;
 
     public PricingService(PriceRepository priceRepository) {
@@ -50,6 +53,27 @@ public class PricingService {
     }
 
     /**
+     * Saves price in DB
+     *
+     * @param price  Object.
+     * @return saved Price object
+     */
+    public Price setPrice(Price price)  {
+        return priceRepository.save(price);
+    }
+
+    /**
+     * Creates new random price
+     *
+     * @param vehicleId ID number of the vehicle the price is requested for.
+     * @return saved Price object
+     */
+    public Price setNewPrice(Long vehicleId, String currency, Optional<BigDecimal> amount) {
+        Price price = new Price(vehicleId, (currency!=null && currency.trim().length()>0)?currency:"USD", (amount.isPresent())?amount.get():randomPrice());
+        return priceRepository.save(price);
+    }
+
+    /**
      * Gets a random price to fill in for a given vehicle ID.
      *
      * @return random price for a vehicle
@@ -59,4 +83,28 @@ public class PricingService {
                 .multiply(new BigDecimal(5000d)).setScale(2, RoundingMode.HALF_UP);
     }
 
+    /**
+     * Deletes the price entry for given vehicleId
+     *
+     * @param vehicleId ID number of the vehicle the price is requested for.
+     * @return saved Price object
+     */
+    public String delete(Long vehicleId) {
+        try{
+            Optional<Price> price = priceRepository.findById(vehicleId);
+            if (price.isEmpty()) {
+                throw new PriceException("Cannot find price for Vehicle " + vehicleId);
+            }else{
+                priceRepository.delete(price.get());
+            }
+        }catch (Exception ex){
+            return FAILURE;
+        }
+        return SUCCESS;
+
+    }
+
+    public Set<Price> getPriceList(Set<Long> vehicleList) {
+        return priceRepository.findByVehicleIdIn(vehicleList);
+    }
 }

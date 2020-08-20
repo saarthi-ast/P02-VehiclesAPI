@@ -9,8 +9,11 @@ import com.udacity.vehicles.domain.manufacturer.Manufacturer;
 import com.udacity.vehicles.domain.manufacturer.ManufacturerRepository;
 import org.springframework.stereotype.Service;
 
+import java.math.BigDecimal;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 import static com.udacity.vehicles.constants.ApplicationConstants.*;
 
@@ -41,7 +44,9 @@ public class CarService {
      * @return a list of all vehicles in the CarRepository
      */
     public List<Car> list() {
-        return repository.findAll();
+        List<Car> carList = repository.findAll();
+        Set<Long> VehicleIds = carList.stream().map(x -> x.getId()).collect(Collectors.toSet());
+        return carList;
     }
 
     /**
@@ -75,20 +80,26 @@ public class CarService {
      * @return the new/updated car is stored in the repository
      */
     public Car save(Car car) {
+        Car carToSave = car;
         if (car.getId() != null && car.getId() > 0) {
-            return repository.findById(car.getId())
+            carToSave =  repository.findById(car.getId())
                     .map(carToBeUpdated -> {
                         carToBeUpdated.setDetails(car.getDetails());
                         carToBeUpdated.setLocation(car.getLocation());
-                        return repository.save(carToBeUpdated);
+                        return carToBeUpdated;
                     }).orElseThrow(CarNotFoundException::new);
         } else {
             Manufacturer manufacturer = car.getDetails().getManufacturer();
             manufacturerRepository.save(manufacturer);
         }
-        Car savedCar = repository.save(car);
-        String carPrice = priceClient.getPrice(savedCar.getId());
-        savedCar.setPrice(carPrice);
+        Car savedCar = repository.save(carToSave);
+        if(car.getPrice() != null){
+            String carPrice = priceClient.getNewPrice(savedCar.getId(),null,new BigDecimal(car.getPrice()));
+            savedCar.setPrice(carPrice);
+        }else{
+            String carPrice = priceClient.getPrice(savedCar.getId());
+            savedCar.setPrice(carPrice);
+        }
         Location address = mapsClient.getAddress(savedCar.getLocation());
         savedCar.setLocation(address);
         return savedCar;
@@ -109,6 +120,7 @@ public class CarService {
                 throw new CarNotFoundException(CAR_NOT_FOUND);
             }
             repository.delete(result);
+            priceClient.deletePrice(id);
         } catch (CarNotFoundException ex) {
             throw new CarNotFoundException(CAR_NOT_FOUND);
         } catch (Exception ex) {

@@ -1,6 +1,8 @@
 package com.udacity.pricing.controller;
 
 import com.udacity.pricing.exceptions.PriceException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -18,6 +20,7 @@ import java.util.stream.Collectors;
 
 @ControllerAdvice
 public class ErrorController extends ResponseEntityExceptionHandler {
+    private static final Logger log = LoggerFactory.getLogger(ErrorController.class);
     private static final String DEFAULT_VALIDATION_FAILED_MESSAGE = "Validation failed";
     private static final String DEFAULT_UNSUPPORTED_OP_MESSAGE = "Operation not supported";
 
@@ -25,6 +28,7 @@ public class ErrorController extends ResponseEntityExceptionHandler {
     @ExceptionHandler(value = {Exception.class})
     protected ResponseEntity<Object> handlePriceExceptions(
             RuntimeException ex, WebRequest request) {
+        log.error("Error in Pricing API - handlePriceExceptions - "+ex.getMessage()+" \n Caused by: "+ex.getCause());
         String bodyOfResponse;
         if ((ex instanceof ResponseStatusException) && (ex.getCause() instanceof PriceException)) {
             bodyOfResponse = "Price Not Found";
@@ -48,7 +52,7 @@ public class ErrorController extends ResponseEntityExceptionHandler {
                 .stream()
                 .map(error -> error.getField() + ": " + error.getDefaultMessage()).collect(
                         Collectors.toList());
-
+        log.error("Error in Pricing API - handleMethodArgumentNotValid - "+errors);
         Map<String, String> apiError = new HashMap<>();
         apiError.put(DEFAULT_VALIDATION_FAILED_MESSAGE, errors.toString());
         return handleExceptionInternal(ex, apiError, headers, HttpStatus.BAD_REQUEST, request);
