@@ -12,8 +12,6 @@ import org.springframework.stereotype.Service;
 import java.math.BigDecimal;
 import java.util.List;
 import java.util.Optional;
-import java.util.Set;
-import java.util.stream.Collectors;
 
 import static com.udacity.vehicles.constants.ApplicationConstants.*;
 
@@ -44,9 +42,7 @@ public class CarService {
      * @return a list of all vehicles in the CarRepository
      */
     public List<Car> list() {
-        List<Car> carList = repository.findAll();
-        Set<Long> VehicleIds = carList.stream().map(x -> x.getId()).collect(Collectors.toSet());
-        return carList;
+        return repository.findAll();
     }
 
     /**
